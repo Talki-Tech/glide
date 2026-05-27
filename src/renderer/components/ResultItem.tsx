@@ -31,7 +31,7 @@ export function ResultItem({ entry, index, isActive, onHover, onClick }: ResultI
         damping: 28,
         delay: reduce ? 0 : 0.025 + index * 0.03,
       }}
-      className={`glide-no-drag group relative flex cursor-pointer items-center gap-3 overflow-hidden rounded-md border px-3 py-2.5 transition-colors duration-100 ${
+      className={`glide-no-drag group relative flex h-10 shrink-0 cursor-pointer items-center gap-3 overflow-hidden rounded-md border px-3 transition-colors duration-100 ${
         isActive
           ? isPrimary
             ? 'border-mint-500 bg-mint-500/10'
@@ -52,17 +52,17 @@ export function ResultItem({ entry, index, isActive, onHover, onClick }: ResultI
 
       {/* Icon */}
       <div
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded ${
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded ${
           isPrimary || isActive
             ? 'bg-mint-500/15 text-mint-300'
             : 'bg-ink-800 text-ink-300 group-hover:text-mint-300'
         }`}
       >
-        <entry.Icon className="h-[16px] w-[16px]" />
+        <entry.Icon className="h-[14px] w-[14px]" />
       </div>
 
-      {/* Label + description */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* Label only — no description, keeps rows uniform height */}
+      <div className="flex min-w-0 flex-1 items-center">
         <span
           className={`truncate text-[13px] font-medium ${
             isActive ? 'text-white' : 'text-ink-100'
@@ -70,9 +70,6 @@ export function ResultItem({ entry, index, isActive, onHover, onClick }: ResultI
         >
           {entry.label}
         </span>
-        {entry.description && (
-          <span className="truncate text-[11px] text-ink-400">{entry.description}</span>
-        )}
       </div>
 
       {/* Shortcut */}

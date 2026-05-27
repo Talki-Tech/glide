@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ActionResult, ChatMessage, SystemStatus } from '../../shared/ipc';
+import type { ActionResult, ChatMessage, SystemStatus, McpServerState, McpTool } from '../../shared/ipc';
 
 export type ViewMode = 'palette' | 'chat' | 'settings';
 
@@ -86,6 +86,12 @@ interface GlideState {
   updateSettings(patch: Partial<GlideSettings>): void;
   toggleIntegration(key: keyof GlideSettings['integrations']): void;
   resetSettings(): void;
+
+  /* ----- MCP ----- */
+  mcpServers: McpServerState[];
+  mcpTools: McpTool[];
+  setMcpServers(s: McpServerState[]): void;
+  setMcpTools(t: McpTool[]): void;
 }
 
 const initialStatus: SystemStatus = {
@@ -145,4 +151,9 @@ export const useGlideStore = create<GlideState>((set) => ({
       persistSettings(DEFAULT_SETTINGS);
       return { settings: DEFAULT_SETTINGS };
     }),
+
+  mcpServers: [],
+  mcpTools: [],
+  setMcpServers: (s) => set({ mcpServers: s }),
+  setMcpTools: (t) => set({ mcpTools: t }),
 }));

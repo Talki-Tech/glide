@@ -35,7 +35,7 @@ export function ResultList({ results, onRun }: ResultListProps) {
     <div
       role="listbox"
       aria-label="Glide commands"
-      className="flex flex-1 flex-col gap-1.5 overflow-y-auto pr-0.5"
+      className="flex flex-1 flex-col gap-0.5 overflow-y-auto pr-0.5"
     >
       <AnimatePresence initial={false}>
         {results.map((entry, i) => (

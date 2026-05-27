@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { registerIpcHandlers } from './ipc/handlers.js';
 import { IpcChannels, type SystemStatus } from '../shared/ipc.js';
+import { mcpManager } from './mcp/McpManager.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -87,16 +88,20 @@ function registerGlobalShortcuts(): void {
 
 function publishStatus(): void {
   if (!paletteWindow) return;
+  const connected = mcpManager.listServers().filter((s) => s.status === 'connected').length;
   const status: SystemStatus = {
     llm: 'Claude-Opus-4.7',
-    connectedServices: 12,
+    connectedServices: connected,
     online: true,
   };
   paletteWindow.webContents.send(IpcChannels.SystemStatus, status);
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   registerIpcHandlers();
+
+  // Connect to all configured MCP servers before showing the window.
+  mcpManager.init().catch((e) => console.error('[MCP] init error:', e));
 
   // Window controls from renderer
   ipcMain.on(IpcChannels.WindowHide, () => paletteWindow?.hide());
@@ -127,6 +132,7 @@ app.whenReady().then(() => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  mcpManager.shutdown().catch(() => {});
 });
 
 app.on('window-all-closed', () => {

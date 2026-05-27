@@ -10,6 +10,11 @@ import {
   type SystemStatus,
   type TweetPayload,
   type VercelDeployPayload,
+  type McpServerConfig,
+  type McpServerState,
+  type McpTool,
+  type McpCallToolPayload,
+  type McpCallToolResult,
 } from '../shared/ipc.js';
 
 /**
@@ -53,6 +58,35 @@ const glideAPI = {
       const handler = (_evt: IpcRendererEvent, status: SystemStatus) => cb(status);
       ipcRenderer.on(IpcChannels.SystemStatus, handler);
       return () => ipcRenderer.removeListener(IpcChannels.SystemStatus, handler);
+    },
+  },
+
+  mcp: {
+    listServers: (): Promise<McpServerState[]> =>
+      ipcRenderer.invoke(IpcChannels.McpListServers),
+
+    listTools: (): Promise<McpTool[]> =>
+      ipcRenderer.invoke(IpcChannels.McpListTools),
+
+    callTool: (payload: McpCallToolPayload): Promise<McpCallToolResult> =>
+      ipcRenderer.invoke(IpcChannels.McpCallTool, payload),
+
+    addServer: (config: McpServerConfig): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IpcChannels.McpAddServer, config),
+
+    removeServer: (name: string): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IpcChannels.McpRemoveServer, name),
+
+    onServersChanged(cb: (servers: McpServerState[]) => void): () => void {
+      const h = (_evt: IpcRendererEvent, servers: McpServerState[]) => cb(servers);
+      ipcRenderer.on(IpcChannels.McpServerStatusChanged, h);
+      return () => ipcRenderer.removeListener(IpcChannels.McpServerStatusChanged, h);
+    },
+
+    onToolsChanged(cb: (tools: McpTool[]) => void): () => void {
+      const h = (_evt: IpcRendererEvent, tools: McpTool[]) => cb(tools);
+      ipcRenderer.on(IpcChannels.McpToolsChanged, h);
+      return () => ipcRenderer.removeListener(IpcChannels.McpToolsChanged, h);
     },
   },
 };
