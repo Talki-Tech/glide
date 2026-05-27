@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------- Root ---------------- */
+
+:root {
+  color-scheme: dark;
+  font-family:
+    'Inter', -apple-system, 'Segoe UI', 'Segoe UI Variable', Roboto,
+    'Helvetica Neue', sans-serif;
+  font-feature-settings:
+    'cv11' on,
+    'ss01' on,
+    'ss03' on,
+    'calt' on;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #0a0b0d;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[data-selectable] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* ---------------- Drag region (frameless window) ---------------- */
+
+.glide-drag {
+  -webkit-app-region: drag;
+}
+.glide-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* ---------------- Scrollbar (Windows-thin) ---------------- */
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: #2a3038;
+  border: 2px solid #0a0b0d;
+  border-radius: 6px;
+  transition: background 150ms ease;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #3a4049;
+}
+
+/* ---------------- Caret + selection ---------------- */
+
+input,
+textarea {
+  caret-color: #1fe39a;
+}
+::selection {
+  background: rgba(31, 227, 154, 0.28);
+  color: #e7fff6;
+}
