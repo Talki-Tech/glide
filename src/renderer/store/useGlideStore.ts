@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { ActionResult, ChatMessage, SystemStatus, McpServerState, McpTool } from '../../shared/ipc';
+import type { LlmProviderConfigs } from '../../shared/llm';
 
 export type ViewMode = 'palette' | 'chat' | 'settings';
 
@@ -92,6 +93,10 @@ interface GlideState {
   mcpTools: McpTool[];
   setMcpServers(s: McpServerState[]): void;
   setMcpTools(t: McpTool[]): void;
+
+  /* ----- LLM ----- */
+  llmConfigs: LlmProviderConfigs;
+  setLlmConfigs(configs: LlmProviderConfigs): void;
 }
 
 const initialStatus: SystemStatus = {
@@ -156,4 +161,7 @@ export const useGlideStore = create<GlideState>((set) => ({
   mcpTools: [],
   setMcpServers: (s) => set({ mcpServers: s }),
   setMcpTools: (t) => set({ mcpTools: t }),
+
+  llmConfigs: {},
+  setLlmConfigs: (configs) => set({ llmConfigs: configs }),
 }));

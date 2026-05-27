@@ -21,6 +21,11 @@ import {
 import type { ComponentType, SVGProps } from 'react';
 import type { McpServerConfig } from '../../shared/ipc';
 import { MCP_CATALOG, CATALOG_CATEGORIES, type CatalogEntry } from '../lib/mcpCatalog';
+import {
+  LLM_MODELS,
+  type LlmProvider,
+  type LlmProviderConfigs,
+} from '../../shared/llm';
 
 interface SettingsViewProps {
   onExit(): void;
@@ -58,13 +63,14 @@ const INTEGRATIONS: IntegrationRow[] = [
   { key: 'vscode',  label: 'VS Code',     description: 'Open projects in the editor.',           Icon: VSCodeIcon },
 ];
 
-type SettingsTab = 'appearance' | 'behavior' | 'integrations' | 'mcp' | 'about';
+type SettingsTab = 'appearance' | 'behavior' | 'integrations' | 'mcp' | 'ai' | 'about';
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'appearance',   label: 'Appearance' },
   { id: 'behavior',     label: 'Behavior' },
   { id: 'integrations', label: 'Integrations' },
   { id: 'mcp',          label: 'MCP Servers' },
+  { id: 'ai',           label: 'AI Providers' },
   { id: 'about',        label: 'About' },
 ];
 
@@ -195,6 +201,8 @@ export function SettingsView({ onExit }: SettingsViewProps) {
 
           {tab === 'mcp' && <McpTab />}
 
+          {tab === 'ai' && <AiTab />}
+
           {tab === 'about' && (
             <Section title="About">
               <div className="flex items-center justify-between rounded border border-ink-700 bg-ink-850 px-3 py-2 text-[12px] text-ink-300">
@@ -214,6 +222,148 @@ export function SettingsView({ onExit }: SettingsViewProps) {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* AI Providers tab                                                    */
+/* ------------------------------------------------------------------ */
+
+const PROVIDER_META: { id: LlmProvider; label: string; docsUrl: string; keyPlaceholder: string }[] = [
+  {
+    id: 'anthropic',
+    label: 'Anthropic (Claude)',
+    docsUrl: 'https://console.anthropic.com/keys',
+    keyPlaceholder: 'sk-ant-...',
+  },
+  {
+    id: 'openai',
+    label: 'OpenAI (GPT)',
+    docsUrl: 'https://platform.openai.com/api-keys',
+    keyPlaceholder: 'sk-...',
+  },
+  {
+    id: 'gemini',
+    label: 'Google Gemini',
+    docsUrl: 'https://aistudio.google.com/app/apikey',
+    keyPlaceholder: 'AIza...',
+  },
+];
+
+function AiTab() {
+  const { llmConfigs, setLlmConfigs } = useGlideStore();
+
+  // Local draft state — save explicitly
+  const [draft, setDraft] = useState<LlmProviderConfigs>(() => {
+    // Pre-fill from store (keys already saved)
+    const init: LlmProviderConfigs = {};
+    for (const p of PROVIDER_META) {
+      init[p.id] = { apiKey: llmConfigs[p.id]?.apiKey ?? '', defaultModel: llmConfigs[p.id]?.defaultModel ?? LLM_MODELS[p.id][0].id };
+    }
+    return init;
+  });
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  function setKey(provider: LlmProvider, key: string) {
+    setDraft((d) => ({ ...d, [provider]: { ...d[provider], apiKey: key } }));
+    setSaved(false);
+  }
+
+  function setModel(provider: LlmProvider, model: string) {
+    setDraft((d) => ({ ...d, [provider]: { ...d[provider], defaultModel: model } }));
+    setSaved(false);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await window.glide.llm.setConfigs(draft);
+      setLlmConfigs(draft);
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Section title="AI provider keys">
+        <div className="flex flex-col gap-2">
+          {PROVIDER_META.map((pm) => {
+            const cfg = draft[pm.id];
+            const hasKey = !!cfg?.apiKey;
+            return (
+              <div key={pm.id} className="flex flex-col gap-1.5 rounded border border-ink-700 bg-ink-850 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12.5px] font-semibold text-ink-100">{pm.label}</span>
+                  {hasKey && (
+                    <span className="rounded bg-mint-500/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-mint-300">
+                      Key set
+                    </span>
+                  )}
+                </div>
+
+                {/* API key */}
+                <FormRow label="API Key">
+                  <input
+                    type="password"
+                    value={cfg?.apiKey ?? ''}
+                    onChange={(e) => setKey(pm.id, e.target.value)}
+                    placeholder={pm.keyPlaceholder}
+                    spellCheck={false}
+                    className="w-full rounded border border-ink-700 bg-ink-900 px-2 py-1 font-mono text-[11px] text-ink-100 outline-none focus:border-mint-500"
+                  />
+                </FormRow>
+
+                {/* Default model selector */}
+                <FormRow label="Default model">
+                  <select
+                    value={cfg?.defaultModel ?? LLM_MODELS[pm.id][0].id}
+                    onChange={(e) => setModel(pm.id, e.target.value)}
+                    className="w-full rounded border border-ink-700 bg-ink-900 px-2 py-1 text-[11px] text-ink-100 outline-none focus:border-mint-500"
+                  >
+                    {LLM_MODELS[pm.id].map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}{m.note ? ` · ${m.note}` : ''}{` · ${(m.contextWindow / 1000).toFixed(0)}k ctx`}
+                      </option>
+                    ))}
+                  </select>
+                </FormRow>
+
+                <a
+                  href={pm.docsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] text-mint-400/70 hover:text-mint-300 hover:underline"
+                >
+                  Get API key →
+                </a>
+              </div>
+            );
+          })}
+        </div>
+      </Section>
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="rounded border border-mint-500/60 bg-mint-500/15 px-4 py-1.5 text-[12px] font-medium text-mint-100 disabled:opacity-50 hover:enabled:bg-mint-500/25"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        {saved && (
+          <span className="flex items-center gap-1 text-[11px] text-mint-300">
+            <CheckIcon className="h-3.5 w-3.5" /> Saved
+          </span>
+        )}
+      </div>
+
+      <p className="text-[10px] text-ink-500">
+        Keys sent to main process only — never leave your machine.
+      </p>
+    </div>
   );
 }
 

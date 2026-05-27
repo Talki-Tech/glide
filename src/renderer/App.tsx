@@ -28,6 +28,7 @@ export function App() {
     mcpTools,
     setMcpServers,
     setMcpTools,
+    setLlmConfigs,
   } = useGlideStore();
 
   /* ----- Merge static + MCP commands ----- */
@@ -101,6 +102,11 @@ export function App() {
       unsubTools();
     };
   }, [setMcpServers, setMcpTools]);
+
+  /* ----- LLM: load saved configs on mount ----- */
+  useEffect(() => {
+    window.glide.llm.getConfigs().then(setLlmConfigs).catch(() => {});
+  }, [setLlmConfigs]);
 
   /* ----- global key handling ----- */
   useEffect(() => {

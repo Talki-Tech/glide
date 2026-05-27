@@ -16,6 +16,7 @@ import {
   type McpCallToolPayload,
   type McpCallToolResult,
 } from '../shared/ipc.js';
+import type { LlmChatPayload, LlmChatResult, LlmProviderConfigs } from '../shared/llm.js';
 
 /**
  * The single object the renderer is allowed to touch. Everything
@@ -88,6 +89,17 @@ const glideAPI = {
       ipcRenderer.on(IpcChannels.McpToolsChanged, h);
       return () => ipcRenderer.removeListener(IpcChannels.McpToolsChanged, h);
     },
+  },
+
+  llm: {
+    chat: (payload: LlmChatPayload): Promise<LlmChatResult> =>
+      ipcRenderer.invoke(IpcChannels.LlmChat, payload),
+
+    setConfigs: (configs: LlmProviderConfigs): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IpcChannels.LlmSetConfigs, configs),
+
+    getConfigs: (): Promise<LlmProviderConfigs> =>
+      ipcRenderer.invoke(IpcChannels.LlmGetConfigs),
   },
 };
 

@@ -18,6 +18,8 @@ import { syncGithubPRs } from '../actions/slack.js';
 import { checkXLimits } from '../actions/x.js';
 import { runChat } from '../actions/chat.js';
 import { mcpManager } from '../mcp/McpManager.js';
+import { llmManager } from '../llm/LlmManager.js';
+import type { LlmChatPayload, LlmProviderConfigs } from '../../shared/llm.js';
 
 function broadcastToAll(channel: string, payload: unknown): void {
   BrowserWindow.getAllWindows().forEach((w) => {
@@ -88,4 +90,23 @@ export function registerIpcHandlers(): void {
   mcpManager.on('tools-changed', () => {
     broadcastToAll(IpcChannels.McpToolsChanged, mcpManager.listTools());
   });
+
+  /* ------------------------------------------------------------------ */
+  /* LLM                                                                 */
+  /* ------------------------------------------------------------------ */
+
+  ipcMain.handle(
+    IpcChannels.LlmChat,
+    async (_evt, payload: LlmChatPayload) => llmManager.chat(payload),
+  );
+
+  ipcMain.handle(
+    IpcChannels.LlmSetConfigs,
+    (_evt, configs: LlmProviderConfigs) => {
+      llmManager.setConfigs(configs);
+      return { ok: true };
+    },
+  );
+
+  ipcMain.handle(IpcChannels.LlmGetConfigs, () => llmManager.getConfigs());
 }

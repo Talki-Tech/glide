@@ -29,6 +29,11 @@ export const IpcChannels = {
   McpCallTool: 'mcp:call-tool',
   McpServerStatusChanged: 'mcp:server-status-changed',
   McpToolsChanged: 'mcp:tools-changed',
+
+  // LLM
+  LlmChat: 'llm:chat',
+  LlmSetConfigs: 'llm:set-configs',
+  LlmGetConfigs: 'llm:get-configs',
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];
