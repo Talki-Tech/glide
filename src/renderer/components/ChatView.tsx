@@ -2,6 +2,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useGlideStore } from '../store/useGlideStore';
 import { SparkleIcon } from './icons';
+import { LLM_MODELS, type LlmProvider } from '../../shared/llm';
+
+const PROVIDER_LABEL: Record<LlmProvider, string> = {
+  anthropic: 'Claude',
+  openai: 'GPT',
+  gemini: 'Gemini',
+};
 
 interface ChatViewProps {
   onExit(): void;
@@ -11,10 +18,24 @@ interface ChatViewProps {
  * Chat surface. Windows flat style, sharp corners, no floating bubbles.
  */
 export function ChatView({ onExit }: ChatViewProps) {
-  const { messages, appendMessage, isAssistantTyping, setAssistantTyping } = useGlideStore();
+  const { messages, appendMessage, isAssistantTyping, setAssistantTyping, llmConfigs } = useGlideStore();
   const [draft, setDraft] = useState('');
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Resolve active provider + model name for display
+  const activeLlmLabel = (() => {
+    const order: LlmProvider[] = ['anthropic', 'openai', 'gemini'];
+    for (const p of order) {
+      const cfg = llmConfigs[p];
+      if (cfg?.apiKey) {
+        const modelId = cfg.defaultModel ?? LLM_MODELS[p][0].id;
+        const model = LLM_MODELS[p].find((m) => m.id === modelId);
+        return `${PROVIDER_LABEL[p]} · ${model?.name ?? modelId}`;
+      }
+    }
+    return null;
+  })();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -79,9 +100,15 @@ export function ChatView({ onExit }: ChatViewProps) {
         {messages.length === 0 && (
           <div className="my-auto flex flex-col items-center gap-1 text-center text-ink-400">
             <p className="text-[13px]">Ask anything. Run anything.</p>
-            <p className="text-[11px] text-ink-500">
-              Wired to <span className="text-mint-300">Claude-Opus-4.7</span>.
-            </p>
+            {activeLlmLabel ? (
+              <p className="text-[11px] text-ink-500">
+                Wired to <span className="text-mint-300">{activeLlmLabel}</span>.
+              </p>
+            ) : (
+              <p className="text-[11px] text-amber-400/80">
+                No API key set — go to Settings → AI Providers.
+              </p>
+            )}
           </div>
         )}
 
