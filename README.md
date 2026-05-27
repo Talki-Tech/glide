@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ GLIDE
+# ⚡ Glide
 
 **Premium visual-first AI agent desktop automation command palette.**
 
