@@ -250,20 +250,27 @@ const PROVIDER_META: { id: LlmProvider; label: string; docsUrl: string; keyPlace
   },
 ];
 
+const MASKED = '••••••••';
+
 function AiTab() {
   const { llmConfigs, setLlmConfigs } = useGlideStore();
 
-  // Local draft state — save explicitly
+  // Local draft — apiKey '' means unchanged (keep stored key), non-empty = new key
   const [draft, setDraft] = useState<LlmProviderConfigs>(() => {
-    // Pre-fill from store (keys already saved)
     const init: LlmProviderConfigs = {};
     for (const p of PROVIDER_META) {
-      init[p.id] = { apiKey: llmConfigs[p.id]?.apiKey ?? '', defaultModel: llmConfigs[p.id]?.defaultModel ?? LLM_MODELS[p.id][0].id };
+      // Don't pre-fill masked key into input — keep field empty, show placeholder
+      init[p.id] = { apiKey: '', defaultModel: llmConfigs[p.id]?.defaultModel ?? LLM_MODELS[p.id][0].id };
     }
     return init;
   });
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Whether a key is already stored for this provider (masked value from main)
+  function hasStoredKey(provider: LlmProvider): boolean {
+    return llmConfigs[provider]?.apiKey === MASKED;
+  }
 
   function setKey(provider: LlmProvider, key: string) {
     setDraft((d) => ({ ...d, [provider]: { ...d[provider], apiKey: key } }));
@@ -278,8 +285,24 @@ function AiTab() {
   async function handleSave() {
     setSaving(true);
     try {
-      await window.glide.llm.setConfigs(draft);
-      setLlmConfigs(draft);
+      // Build payload: for providers where user left key blank, keep stored key
+      // (main process will ignore empty-string keys and keep existing)
+      const toSend: LlmProviderConfigs = {};
+      for (const p of PROVIDER_META) {
+        const newKey = draft[p.id]?.apiKey?.trim() ?? '';
+        const storedMasked = llmConfigs[p.id]?.apiKey === MASKED;
+        toSend[p.id] = {
+          // If blank + already have stored key → send sentinel to keep it
+          // If blank + no stored key → empty (no key)
+          // If non-blank → new key
+          apiKey: newKey || (storedMasked ? '__KEEP__' : ''),
+          defaultModel: draft[p.id]?.defaultModel ?? LLM_MODELS[p.id][0].id,
+        };
+      }
+      await window.glide.llm.setConfigs(toSend);
+      // Refresh masked status from main
+      const updated = await window.glide.llm.getConfigs();
+      setLlmConfigs(updated);
       setSaved(true);
     } finally {
       setSaving(false);
@@ -292,7 +315,8 @@ function AiTab() {
         <div className="flex flex-col gap-2">
           {PROVIDER_META.map((pm) => {
             const cfg = draft[pm.id];
-            const hasKey = !!cfg?.apiKey;
+            const stored = hasStoredKey(pm.id);
+            const hasKey = stored || !!cfg?.apiKey;
             return (
               <div key={pm.id} className="flex flex-col gap-1.5 rounded border border-ink-700 bg-ink-850 p-3">
                 <div className="flex items-center justify-between">
@@ -310,9 +334,9 @@ function AiTab() {
                     type="password"
                     value={cfg?.apiKey ?? ''}
                     onChange={(e) => setKey(pm.id, e.target.value)}
-                    placeholder={pm.keyPlaceholder}
+                    placeholder={stored ? 'Key saved — paste new to replace' : pm.keyPlaceholder}
                     spellCheck={false}
-                    className="w-full rounded border border-ink-700 bg-ink-900 px-2 py-1 font-mono text-[11px] text-ink-100 outline-none focus:border-mint-500"
+                    className="w-full rounded border border-ink-700 bg-ink-900 px-2 py-1 font-mono text-[11px] text-ink-100 outline-none focus:border-mint-500 placeholder:text-ink-500"
                   />
                 </FormRow>
 

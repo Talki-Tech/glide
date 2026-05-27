@@ -34,6 +34,16 @@ export const IpcChannels = {
   LlmChat: 'llm:chat',
   LlmSetConfigs: 'llm:set-configs',
   LlmGetConfigs: 'llm:get-configs',
+
+  // Chat streaming
+  ChatToken: 'chat:token',
+  ChatToolCall: 'chat:tool-call',
+  ChatDone: 'chat:done',
+  ChatError: 'chat:error',
+
+  // Chat history
+  ChatLoadHistory: 'chat:load-history',
+  ChatClearHistory: 'chat:clear-history',
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];
@@ -155,4 +165,32 @@ export interface McpContentBlock {
 /** Full servers.json file shape (compatible with Claude Desktop). */
 export interface McpServersFile {
   mcpServers: Record<string, Omit<McpServerConfig, 'name'>>;
+}
+
+/* ---------------- Chat streaming events (main → renderer push) ---------------- */
+
+/** One text delta during streaming. */
+export interface ChatTokenEvent {
+  delta: string;
+}
+
+/** LLM decided to call an MCP tool. */
+export interface ChatToolCallEvent {
+  toolName: string;
+  serverName: string;
+  args: Record<string, unknown>;
+  /** Result after execution (added when tool returns). */
+  result?: string;
+}
+
+/** Streaming finished successfully. */
+export interface ChatDoneEvent {
+  fullText: string;
+  inputTokens?: number;
+  outputTokens?: number;
+}
+
+/** Fatal error during streaming/tool loop. */
+export interface ChatErrorEvent {
+  error: string;
 }

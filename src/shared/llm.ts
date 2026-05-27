@@ -26,9 +26,12 @@ export const LLM_MODELS: Record<LlmProvider, LlmModel[]> = {
     { id: 'gpt-5.4-nano',  name: 'GPT-5.4 Nano',  contextWindow: 128_000,   note: 'cheapest' },
   ],
   gemini: [
-    { id: 'gemini-3.5-flash',    name: 'Gemini 3.5 Flash',    contextWindow: 1_000_000, note: 'flagship' },
-    { id: 'gemini-3.1-pro',      name: 'Gemini 3.1 Pro',      contextWindow: 2_000_000, note: 'reasoning' },
-    { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash Lite', contextWindow: 1_000_000, note: 'fast' },
+    { id: 'gemini-3.5-flash',         name: 'Gemini 3.5 Flash',       contextWindow: 1_000_000, note: 'flagship' },
+    { id: 'gemini-3.1-pro-preview',   name: 'Gemini 3.1 Pro Preview', contextWindow: 1_000_000, note: 'reasoning' },
+    { id: 'gemini-3.1-flash-lite',    name: 'Gemini 3.1 Flash Lite',  contextWindow: 1_000_000, note: 'fast' },
+    { id: 'gemini-2.5-pro',           name: 'Gemini 2.5 Pro',         contextWindow: 1_000_000, note: 'stable' },
+    { id: 'gemini-2.5-flash',         name: 'Gemini 2.5 Flash',       contextWindow: 1_000_000, note: 'cheap' },
+    { id: 'gemini-2.5-flash-lite',    name: 'Gemini 2.5 Flash Lite',  contextWindow: 1_000_000, note: 'cheapest' },
   ],
 };
 

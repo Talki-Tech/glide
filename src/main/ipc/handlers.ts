@@ -16,9 +16,10 @@ import { openInVSCode } from '../actions/vscode.js';
 import { runVercelDeploy } from '../actions/vercel.js';
 import { syncGithubPRs } from '../actions/slack.js';
 import { checkXLimits } from '../actions/x.js';
-import { runChat } from '../actions/chat.js';
+import { runChat, getHistory, clearHistory } from '../actions/chat.js';
 import { mcpManager } from '../mcp/McpManager.js';
 import { llmManager } from '../llm/LlmManager.js';
+import { saveConfigs, loadConfigs } from '../llm/keyStore.js';
 import type { LlmChatPayload, LlmProviderConfigs } from '../../shared/llm.js';
 
 function broadcastToAll(channel: string, payload: unknown): void {
@@ -28,6 +29,12 @@ function broadcastToAll(channel: string, payload: unknown): void {
 }
 
 export function registerIpcHandlers(): void {
+  // Load persisted LLM keys on startup
+  const savedConfigs = loadConfigs();
+  if (Object.keys(savedConfigs).length > 0) {
+    llmManager.setConfigs(savedConfigs);
+  }
+
   /* ------------------------------------------------------------------ */
   /* Existing actions                                                     */
   /* ------------------------------------------------------------------ */
@@ -102,11 +109,46 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     IpcChannels.LlmSetConfigs,
-    (_evt, configs: LlmProviderConfigs) => {
-      llmManager.setConfigs(configs);
+    (_evt, incoming: LlmProviderConfigs) => {
+      // Merge: __KEEP__ sentinel means "don't overwrite existing key"
+      const existing = llmManager.getConfigs();
+      const merged: LlmProviderConfigs = { ...existing };
+      for (const [provider, cfg] of Object.entries(incoming)) {
+        if (!cfg) continue;
+        const p = provider as keyof LlmProviderConfigs;
+        if (cfg.apiKey === '__KEEP__') {
+          // Keep existing key, only update model
+          merged[p] = { apiKey: existing[p]?.apiKey ?? '', defaultModel: cfg.defaultModel };
+        } else {
+          merged[p] = cfg;
+        }
+      }
+      llmManager.setConfigs(merged);
+      saveConfigs(merged);
       return { ok: true };
     },
   );
 
-  ipcMain.handle(IpcChannels.LlmGetConfigs, () => llmManager.getConfigs());
+  ipcMain.handle(IpcChannels.LlmGetConfigs, () => {
+    // Return configs with keys masked — renderer only needs to know which
+    // providers are configured + which model is selected.
+    const configs = llmManager.getConfigs();
+    const masked: LlmProviderConfigs = {};
+    for (const [provider, cfg] of Object.entries(configs)) {
+      if (cfg) {
+        masked[provider as keyof LlmProviderConfigs] = {
+          apiKey: cfg.apiKey ? '••••••••' : '',
+          defaultModel: cfg.defaultModel,
+        };
+      }
+    }
+    return masked;
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* Chat history                                                        */
+  /* ------------------------------------------------------------------ */
+
+  ipcMain.handle(IpcChannels.ChatLoadHistory, () => getHistory());
+  ipcMain.handle(IpcChannels.ChatClearHistory, () => { clearHistory(); return { ok: true }; });
 }

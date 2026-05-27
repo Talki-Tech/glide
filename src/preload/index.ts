@@ -17,6 +17,12 @@ import {
   type McpCallToolResult,
 } from '../shared/ipc.js';
 import type { LlmChatPayload, LlmChatResult, LlmProviderConfigs } from '../shared/llm.js';
+import type {
+  ChatTokenEvent,
+  ChatToolCallEvent,
+  ChatDoneEvent,
+  ChatErrorEvent,
+} from '../shared/ipc.js';
 
 /**
  * The single object the renderer is allowed to touch. Everything
@@ -100,6 +106,36 @@ const glideAPI = {
 
     getConfigs: (): Promise<LlmProviderConfigs> =>
       ipcRenderer.invoke(IpcChannels.LlmGetConfigs),
+  },
+
+  chatStream: {
+    onToken(cb: (e: ChatTokenEvent) => void): () => void {
+      const h = (_evt: IpcRendererEvent, e: ChatTokenEvent) => cb(e);
+      ipcRenderer.on(IpcChannels.ChatToken, h);
+      return () => ipcRenderer.removeListener(IpcChannels.ChatToken, h);
+    },
+    onToolCall(cb: (e: ChatToolCallEvent) => void): () => void {
+      const h = (_evt: IpcRendererEvent, e: ChatToolCallEvent) => cb(e);
+      ipcRenderer.on(IpcChannels.ChatToolCall, h);
+      return () => ipcRenderer.removeListener(IpcChannels.ChatToolCall, h);
+    },
+    onDone(cb: (e: ChatDoneEvent) => void): () => void {
+      const h = (_evt: IpcRendererEvent, e: ChatDoneEvent) => cb(e);
+      ipcRenderer.on(IpcChannels.ChatDone, h);
+      return () => ipcRenderer.removeListener(IpcChannels.ChatDone, h);
+    },
+    onError(cb: (e: ChatErrorEvent) => void): () => void {
+      const h = (_evt: IpcRendererEvent, e: ChatErrorEvent) => cb(e);
+      ipcRenderer.on(IpcChannels.ChatError, h);
+      return () => ipcRenderer.removeListener(IpcChannels.ChatError, h);
+    },
+  },
+
+  chatHistory: {
+    load: (): Promise<import('../shared/ipc.js').ChatMessage[]> =>
+      ipcRenderer.invoke(IpcChannels.ChatLoadHistory),
+    clear: (): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IpcChannels.ChatClearHistory),
   },
 };
 
